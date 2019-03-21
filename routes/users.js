@@ -49,7 +49,30 @@ router.post("/register", function(request, response) {
       password2: password2
     });
   } else {
-    console.log("Success");
+    var newUser = {
+      name: name,
+      email: email,
+      username: username,
+      password: password
+    };
+    bcrypt.genSalt(10, function(error, salt) {
+      bcrypt.hash(newUser.password, salt, function(error, hash) {
+        newUser.password = hash;
+        db.users.insert(newUser, function(error, doc) {
+          if (error) {
+            response.send(error);
+          }
+          console.log("Successfully inserted document");
+
+          // Success Message
+          request.flash("Successfully added new user");
+
+          // Redirect
+          response.location("/");
+          response.redirect("/");
+        });
+      });
+    });
   }
 });
 
