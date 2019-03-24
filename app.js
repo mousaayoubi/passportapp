@@ -56,6 +56,11 @@ app.use(
   })
 );
 
+app.get("*", function(request, response, next) {
+  response.locals.user = request.user || null;
+  next();
+});
+
 // Connect Flash Middleware
 app.use(flash());
 app.use(function(req, res, next) {

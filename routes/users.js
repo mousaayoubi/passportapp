@@ -32,7 +32,7 @@ router.post("/register", function(request, response) {
   request.checkBody("username", "Username is a required field").notEmpty();
   request.checkBody("password", "Password is a required field").notEmpty();
   request
-    .checkBody("password2", "Password do not match")
+    .checkBody("password2", "Passwords do not match")
     .equals(request.body.password);
 
   // Check for errors
@@ -74,6 +74,60 @@ router.post("/register", function(request, response) {
       });
     });
   }
+});
+
+passport.serializeUser(function(user, done) {
+  done(null, user._id);
+});
+
+passport.deserializeUser(function(id, done) {
+  db.users.findOne({ _id: mongojs.ObjectId(id) }, function(err, user) {
+    done(err, user);
+  });
+});
+
+passport.use(
+  new LocalStrategy(function(username, password, done) {
+    db.users.findOne({ username: username }, function(err, user) {
+      if (err) {
+        return done(err);
+      }
+      if (!user) {
+        return done(null, false, { message: "Invalid username" });
+      }
+      bcrypt.compare(password, user.password, function(err, isMatch) {
+        if (err) {
+          return done(err);
+        }
+        if (isMatch) {
+          return done(null, user);
+        } else {
+          return done(null, false, { message: "Invalid password" });
+        }
+      });
+    });
+  })
+);
+
+// Login - POST
+router.post(
+  "/login",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/users/login",
+    failureFlash: "Invalid username or password"
+  }),
+  function(request, response) {
+    console.log("Successfull authentication");
+    response.redirect("/");
+  }
+);
+
+// Logout
+router.get("/logout", function(request, response) {
+  request.logout();
+  request.flash("success", "You have logged out");
+  response.redirect("/users/login");
 });
 
 module.exports = router;
